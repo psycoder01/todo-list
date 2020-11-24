@@ -3,6 +3,8 @@ import { makeStyles } from "@material-ui/core/styles";
 import { Paper, TextField, Button } from "@material-ui/core";
 import { checkEmail } from "../helpers/validators";
 import SnackBar from "../components/snackbar";
+import { signup } from "../apis/auth";
+import { firestore } from "../config/firebase";
 
 const useStyles = makeStyles({
     root: {
@@ -11,7 +13,7 @@ const useStyles = makeStyles({
         textAlign: "center",
         flexDirection: "column",
         width: "60vw",
-        height: "60vh",
+        height: "80vh",
         padding: "10px",
         background: "#f0f0f0",
     },
@@ -28,14 +30,13 @@ const useStyles = makeStyles({
 const SignUp = () => {
     const classes = useStyles();
     const email = useRef();
+    const username = useRef();
     const pass = useRef();
     const passConfirm = useRef();
     const [error, setError] = useState();
     const [openSnackBar, setOpen] = useState(false);
 
     const submit = () => {
-        console.log(pass.current.value);
-        console.log(passConfirm.current.value);
         if (!checkEmail(email.current.value)) {
             setError("Not Valid Credentials");
             setOpen(true);
@@ -46,9 +47,30 @@ const SignUp = () => {
             setOpen(true);
             return;
         }
-
-        console.log(email.current.value);
-        console.log(pass.current.value);
+        if (username.current.value === "") {
+            setError("Please Input Username");
+            setOpen(true);
+            return;
+        }
+        signup(email.current.value, pass.current.value)
+            .then((user) => {
+                let newUser = {
+                    username: username.current.value,
+                    email: email.current.value,
+                    authId: user.user.uid,
+                    todos:[],
+                };
+                return firestore.collection("users").add(newUser);
+            })
+            .then(() => {
+                setError("Account Created Successfully");
+                setOpen(true);
+            })
+            .catch((error) => {
+                console.log(error);
+                setError("Opps! Something not good");
+                setOpen(true);
+            });
     };
 
     const handleClose = (event, reason) => {
@@ -82,6 +104,12 @@ const SignUp = () => {
                     variant="outlined"
                     label="Confirm Password"
                     type="password"
+                />
+                <TextField
+                    inputRef={username}
+                    className={classes.inputs}
+                    variant="outlined"
+                    label="Username"
                 />
                 <Button
                     className={classes.buttons}

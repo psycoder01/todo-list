@@ -6,7 +6,7 @@ import SignUp from "./pages/signup";
 import Home from "./pages/home";
 
 function App() {
-    const user = null;
+    const user = localStorage.getItem("token");
     return user ? (
         <Home />
     ) : (

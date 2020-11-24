@@ -4,6 +4,7 @@ import { Paper, TextField, Button } from "@material-ui/core";
 import { checkEmail } from "../helpers/validators";
 import SnackBar from "../components/snackbar";
 import { Link } from "react-router-dom";
+import { signin } from "../apis/auth";
 
 const useStyles = makeStyles({
     root: {
@@ -39,9 +40,17 @@ const Login = () => {
             setOpen(true);
             return;
         }
-
-        console.log(email.current.value);
-        console.log(pass.current.value);
+        signin(email.current.value, pass.current.value)
+            .then((user) => {
+                console.log(user);
+                localStorage.setItem("token", "loggedIn");
+                window.location = "/";
+            })
+            .catch((error) => {
+                console.log(error);
+                setError("Opps! Something not good");
+                setOpen(true);
+            });
     };
 
     const handleClose = (event, reason) => {
