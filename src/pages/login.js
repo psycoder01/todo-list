@@ -42,8 +42,7 @@ const Login = () => {
         }
         signin(email.current.value, pass.current.value)
             .then((user) => {
-                console.log(user);
-                localStorage.setItem("token", "loggedIn");
+                localStorage.setItem("token", user.user.uid);
                 window.location = "/";
             })
             .catch((error) => {
