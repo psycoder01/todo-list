@@ -4,7 +4,7 @@ import { Paper, TextField, Button } from "@material-ui/core";
 import { checkEmail } from "../helpers/validators";
 import SnackBar from "../components/snackbar";
 import { Link } from "react-router-dom";
-import { signin } from "../apis/auth";
+import { signin } from "../config/firebase";
 
 const useStyles = makeStyles({
     root: {
@@ -41,10 +41,6 @@ const Login = () => {
             return;
         }
         signin(email.current.value, pass.current.value)
-            .then((user) => {
-                localStorage.setItem("token", user.user.uid);
-                window.location = "/";
-            })
             .catch((error) => {
                 console.log(error);
                 setError("Opps! Something not good");

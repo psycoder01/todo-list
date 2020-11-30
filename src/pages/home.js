@@ -2,55 +2,61 @@ import React, { useState, useRef, useEffect } from "react";
 import { Button, IconButton, TextField } from "@material-ui/core";
 import AddIcon from "@material-ui/icons/Add";
 import Todos from "../components/todos";
-import { signout } from "../apis/auth";
+import { signout, auth } from "../config/firebase";
 import SnackBar from "../components/snackbar";
 import { firestore } from "../config/firebase";
 
 function Home() {
     const [user, setUser] = useState({});
+    const [todos, setTodos] = useState([]);
 
     const todoref = useRef();
     const [messege, setMessege] = useState("");
     const [openSnackBar, setOpen] = useState(false);
 
     const logout = () => {
-        signout().then(() => {
-            setMessege("Logout Successful");
-            localStorage.removeItem("token");
-            setOpen(true);
-            window.location = "/";
-        });
+        signout();
     };
 
     const addTodo = (todo) => {
-        setUser({
-            ...user,
-            todos: [...user.todos, todo],
-        });
-        firestore
-            .collection("users")
-            .doc(user.id)
-            .update({
-                todos: [...user.todos, todo],
-            })
-            .then(() => console.log("done"))
-            .catch((error) => console.log(error));
+        setTodos([...todos, { task: todo, completed: false }]);
+        //firestore
+        //.collection("users")
+        //.doc(user.id)
+        //.update({
+        //todos: [...user.todos, todo],
+        //})
+        //.then(() => {
+        //setMessege("Added Successfully");
+        //setOpen(true);
+        //})
+        //.catch((error) => console.log(error));
+        setMessege("Todo added");
+        setOpen(true);
         todoref.current.value = "";
     };
 
-    const deleteTodo = (todo) => {
-        setUser({
-            ...user,
-            todos: user.todos.filter((item) => item !== todo),
-        });
-        firestore
-            .collection("users")
-            .doc(user.id)
-            .update({
-                todos: user.todos.filter((item) => item !== todo),
+    const deleteTodo = (task) => {
+        setTodos(todos.filter((todo) => todo.task !== task));
+        //firestore
+        //.collection("users")
+        //.doc(user.id)
+        //.update({
+        //todos: user.todos.filter((item) => item !== todo),
+        //})
+        //.then(() => console.log("done"))
+        //.catch((error) => console.log(error));
+        setMessege("Todo deleted");
+        setOpen(true);
+    };
+
+    const markRead = (task) => {
+        setTodos(
+            todos.map((todo) => {
+                if (todo.task === task) todo.completed = true;
+                return todo;
             })
-            .then(() => console.log("done"))
-            .catch((error) => console.log(error));
+        );
     };
 
     const handleClose = (event, reason) => {
@@ -62,21 +68,12 @@ function Home() {
     };
 
     useEffect(() => {
-        let query = firestore
-            .collection("users")
-            .where("authId", "==", localStorage.getItem("token"));
-
-        query
+        var userId = auth.currentUser.uid;
+        firestore
+            .doc(`users/${userId}`)
             .get()
-            .then((querySnapshot) => {
-                querySnapshot.forEach(function (doc) {
-                    setUser({ ...doc.data(), id: doc.id });
-                });
-            })
-            .catch((error) => {
-                console.log(error);
-                setMessege("Opps! some error occured");
-                setOpen(true);
+            .then((doc) => {
+                setUser(doc.data());
             });
     }, []);
 
@@ -84,14 +81,16 @@ function Home() {
         <div style={{ margin: "2em", textAlign: "center" }}>
             <h5 style={{ margin: "2em" }}>Welcome {user.username}</h5>
             <div>
-                {user.todos === undefined
+                {todos === undefined
                     ? ""
-                    : user.todos.map((item, index) => (
+                    : todos.map((item, index) => (
                           <Todos
-                              todo={item}
+                              todo={item.task}
+                              completed={item.completed}
                               key={index}
                               style={{ margin: "1em" }}
                               deleteTodo={deleteTodo}
+                              markRead={markRead}
                           />
                       ))}
             </div>

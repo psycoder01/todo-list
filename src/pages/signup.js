@@ -3,8 +3,7 @@ import { makeStyles } from "@material-ui/core/styles";
 import { Paper, TextField, Button } from "@material-ui/core";
 import { checkEmail } from "../helpers/validators";
 import SnackBar from "../components/snackbar";
-import { signup } from "../apis/auth";
-import { firestore } from "../config/firebase";
+import { firestore, signup } from "../config/firebase";
 
 const useStyles = makeStyles({
     root: {
@@ -55,16 +54,14 @@ const SignUp = () => {
         signup(email.current.value, pass.current.value)
             .then((user) => {
                 let newUser = {
+                    id: user.user.uid,
                     username: username.current.value,
                     email: email.current.value,
-                    authId: user.user.uid,
-                    todos:[],
                 };
-                return firestore.collection("users").add(newUser);
-            })
-            .then(() => {
-                setError("Account Created Successfully");
-                setOpen(true);
+                return firestore
+                    .collection("users")
+                    .doc(user.user.uid)
+                    .set(newUser);
             })
             .catch((error) => {
                 console.log(error);
