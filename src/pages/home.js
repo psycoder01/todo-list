@@ -9,6 +9,8 @@ import { firestore } from "../config/firebase";
 function Home() {
     const [user, setUser] = useState({});
     const [todos, setTodos] = useState([]);
+    const [total, setTotal] = useState();
+    const [completed, setCompleted] = useState();
 
     const todoref = useRef();
     const [messege, setMessege] = useState("");
@@ -18,34 +20,52 @@ function Home() {
         signout();
     };
 
-    const addTodo = (todo) => {
-        setTodos([...todos, { task: todo, completed: false }]);
-        //firestore
-        //.collection("users")
-        //.doc(user.id)
-        //.update({
-        //todos: [...user.todos, todo],
-        //})
-        //.then(() => {
-        //setMessege("Added Successfully");
-        //setOpen(true);
-        //})
-        //.catch((error) => console.log(error));
+    const addTodo = (task) => {
+        setTodos([
+            ...todos,
+            {
+                task: task,
+                completed: false,
+                createdAt: new Date().toLocaleString(),
+            },
+        ]);
+        setTotal(total + 1);
+        firestore
+            .collection("todos")
+            .doc(user.id)
+            .set({
+                todos: [
+                    ...todos,
+                    {
+                        task: task,
+                        completed: false,
+                        createdAt: new Date().toLocaleString(),
+                    },
+                ],
+                completed: completed,
+                total: total + 1,
+            })
+            .then(() => console.log("todo added in firestore"))
+            .catch((error) => console.log(error));
         setMessege("Todo added");
         setOpen(true);
         todoref.current.value = "";
     };
 
-    const deleteTodo = (task) => {
+    const deleteTodo = (task, index) => {
         setTodos(todos.filter((todo) => todo.task !== task));
-        //firestore
-        //.collection("users")
-        //.doc(user.id)
-        //.update({
-        //todos: user.todos.filter((item) => item !== todo),
-        //})
-        //.then(() => console.log("done"))
-        //.catch((error) => console.log(error));
+        if (todos[index].completed) setCompleted(completed - 1);
+        setTotal(total - 1);
+        firestore
+            .collection("todos")
+            .doc(user.id)
+            .update({
+                todos: todos.filter((todo) => todo.task !== task),
+                total: total - 1,
+                completed: todos[index].completed ? completed - 1 : completed,
+            })
+            .then(() => console.log("todo deleted in firestore"))
+            .catch((error) => console.log(error));
         setMessege("Todo deleted");
         setOpen(true);
     };
@@ -53,10 +73,21 @@ function Home() {
     const markRead = (task) => {
         setTodos(
             todos.map((todo) => {
-                if (todo.task === task) todo.completed = true;
+                if (todo.task === task) {
+                    todo.completed = true;
+                    todo.completedAt = new Date().toLocaleString();
+                }
                 return todo;
             })
         );
+        setCompleted(completed + 1);
+        firestore
+            .collection("todos")
+            .doc(user.id)
+            .update({
+                todos: todos,
+                completed: completed + 1,
+            });
     };
 
     const handleClose = (event, reason) => {
@@ -68,25 +99,52 @@ function Home() {
     };
 
     useEffect(() => {
-        var userId = auth.currentUser.uid;
+        let userId = auth.currentUser.uid;
         firestore
             .doc(`users/${userId}`)
             .get()
             .then((doc) => {
                 setUser(doc.data());
+            })
+            .catch(() => {
+                setMessege("Can't Connect");
+                setOpen(true);
+            });
+        firestore
+            .doc(`todos/${userId}`)
+            .get()
+            .then((doc) => {
+                let todos = doc.data();
+                setTodos(todos.todos);
+                setTotal(todos.total === undefined ? 0 : todos.total);
+                setCompleted(
+                    todos.completed === undefined ? 0 : todos.completed
+                );
+            })
+            .catch(() => {
+                setMessege("Can't Connect");
+                setOpen(true);
             });
     }, []);
 
     return (
         <div style={{ margin: "2em", textAlign: "center" }}>
             <h5 style={{ margin: "2em" }}>Welcome {user.username}</h5>
+            <h3>Total : {total}</h3>
+            <h3>Completed : {completed}</h3>
+            <br />
+            <br />
+            <br />
             <div>
                 {todos === undefined
                     ? ""
-                    : todos.map((item, index) => (
+                    : todos.map((todo, index) => (
                           <Todos
-                              todo={item.task}
-                              completed={item.completed}
+                              task={todo.task}
+                              createdAt={todo.createdAt}
+                              completed={todo.completed}
+                              completedAt={todo.completedAt}
+                              index={index}
                               key={index}
                               style={{ margin: "1em" }}
                               deleteTodo={deleteTodo}
