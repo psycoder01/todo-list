@@ -58,10 +58,11 @@ const SignUp = () => {
                     username: username.current.value,
                     email: email.current.value,
                 };
-                return firestore
-                    .collection("users")
-                    .doc(user.user.uid)
-                    .set(newUser);
+                firestore.collection("users").doc(user.user.uid).set(newUser);
+                firestore
+                    .collection("todos")
+                    .doc(newUser.id)
+                    .set({ todos: [], total: 0, completed: 0 });
             })
             .catch((error) => {
                 console.log(error);

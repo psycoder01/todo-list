@@ -18,6 +18,7 @@ function Home() {
 
     const logout = () => {
         signout();
+        window.location="/";
     };
 
     const addTodo = (task) => {
@@ -116,10 +117,8 @@ function Home() {
             .then((doc) => {
                 let todos = doc.data();
                 setTodos(todos.todos);
-                setTotal(todos.total === undefined ? 0 : todos.total);
-                setCompleted(
-                    todos.completed === undefined ? 0 : todos.completed
-                );
+                setTotal(todos.total);
+                setCompleted(todos.completed);
             })
             .catch(() => {
                 setMessege("Can't Connect");
